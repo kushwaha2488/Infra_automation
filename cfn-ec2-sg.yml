@@ -9,6 +9,7 @@ Resources:
        KeyName: cfn-key-2
        SecurityGroups:
         - default
+        - !Ref SSHSecurityGroup
 
    SSHSecurityGroup:
      Type:  AWS::EC2::SecurityGroup
