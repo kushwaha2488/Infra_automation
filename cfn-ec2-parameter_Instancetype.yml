@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AZ demo
+
+Parameters:
+   MyKeyName:
+     Description: Please select the KeyName
+     Type: AWS::EC2::KeyPair::KeyName
+   MyAvailabilityZone:
+     Description: Please select the AvailabilityZone   
+     Type: String 
+     Default: us-east-2a
+     AllowedValues:
+        - us-east-2a
+        - us-east-2b
+        - us-east-2c
+
+   MyInstancetype:
+      Description: Select the Instance type from list
+      Type: String
+      Default: t2.micro
+      AllowedValues:
+        - t2.micro
+        - t2.small
+
+Resources:
+   DevEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+       ImageId: ami-0cd3dfa4e37921605
+       KeyName: !Ref MyKeyName
+       InstanceType: !Ref MyInstancetype
+       SecurityGroups:
+        - default
+        - !Ref SSHSecurityGroup
+       AvailabilityZone: !Ref MyAvailabilityZone
+
+   SSHSecurityGroup:
+     Type:  AWS::EC2::SecurityGroup
+     Properties:
+         GroupDescription: My New SecurityGroups
+         SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 22
+              ToPort: 22
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: 8080
+              ToPort: 8080
+              CidrIp: 0.0.0.0/0
+
+   MyElasticIP:     
+     Type: AWS::EC2::EIP        
+     Properties:
+        InstanceId: !Ref DevEC2Instance
