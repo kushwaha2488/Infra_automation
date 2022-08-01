@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AMI mapping demo
+Parameters:
+   MyKeyName:
+     Type:  AWS::EC2::KeyPair::KeyName
+   EnvName:
+      Description: Please select  the Env Name 
+      Type: String
+      Default: dev
+      AllowedValues:
+        - dev
+        - prod
+
+Mapping:
+  MyRegionMap:
+     us-west-2:
+        HVM64:  ami-0cd3dfa4e37921605
+     ap-south-1:
+        HVM64:  ami-079fd9955144c3788 
+
+  MyEnvironmentMap:
+     dev:
+       instanceType: t2.micro
+     prod:
+       instanceType: t2.small
+
+Conditions: 
+ CreateEIPforProd: !Equals [!Ref EnvName, prod]
+
+Resources:
+   DevEC2Instance:
+      Type:  AWS::EC2::Instance
+      ImageId: !FindInMap
+         - MyRegionMap
+         - !Ref "AWS::Region"
+         - HVM64
+      InstanceType: !FindInMap
+           - MyEnvironmentMap
+           - !Ref EnvName
+           - instanceType
+      KeyName: !Ref MyKeyName
+
+   MyProdEIP:
+      Type: AWS::EC2::EIP 
+      Condition: CreateEIPforProd
+      Properties:
+         InstanceID: !Ref DevEC2Instance
