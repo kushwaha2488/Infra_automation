@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AMI mapping demo
+Parameters:
+   MyKeyName:
+     Type:  AWS::EC2::KeyPair::KeyName
+Mapping:
+  MyRegionMap:
+     us-west-2:
+        HVM64:  ami-0cd3dfa4e37921605
+     ap-south-1:
+        HVM64:  ami-079fd9955144c3788 
+Resources:
+   DevEC2Instance:
+      Type:  AWS::EC2::Instance
+      ImageId: !FindInMap
+         - MyRegionMap
+         - !Ref "AWS::Region"
+         - HVM64
+      InstanceType: t2.micro
+      KeyName: !Ref MyKeyName
