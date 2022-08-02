@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AMI mapping demo
+Parameters:
+   MyKeyName:
+     Type:  AWS::EC2::KeyPair::KeyName
+   EnvName:
+      Description: Please select  the Env Name 
+      Type: String
+      Default: dev
+      AllowedValues:
+        - dev
+        - prod
+        - qa
+
+Mapping:
+  MyRegionMap:
+     us-west-2:
+        HVM64:  ami-0cd3dfa4e37921605
+     ap-south-1:
+        HVM64:  ami-079fd9955144c3788 
+
+  MyEnvironmentMap:
+     dev:
+       instanceType: t2.micro
+     prod:
+       instanceType: t2.small
+     qa:
+       instanceType: t2.medium
+
+Conditions: 
+ CreateEIPforProd: !Equals [!Ref EnvName, prod]
+ CreateProdSG: !Equals [!Ref EnvName, prod]
+ IfRegionUseKey: !And [!Or [!Equals [!Ref 'AWS::Region', us-east-1], !Equals [!Ref  'AWS::Region', ap-south-1]],!Equals [!Ref EnvName, dev]]
+ CreateDevSecuritygroup: !Equals [!Ref EnvName, dev]
+
+Resources:
+   DevEC2Instance:
+      Type:  AWS::EC2::Instance
+      ImageId: !FindInMap
+         - MyRegionMap
+         - !Ref "AWS::Region"
+         - HVM64
+      InstanceType: !FindInMap
+           - MyEnvironmentMap
+           - !Ref EnvName
+           - instanceType
+      KeyName: !If [ IfRegionUseKey, cfn-key-1, cfn-key-2 ]
+      SecurityGroups: !If [!Ref CreateDevSecuritygroup, [!Ref DevSecurityGroup], !Ref 'AWS::NoValue']
+
+   MyProdEIP:
+      Type: AWS::EC2::EIP 
+      Condition: CreateEIPforProd
+      Properties:
+         InstanceID: !Ref DevEC2Instance
+   
+   DevSecurityGroup:
+      Type: AWS::EC2::SecurityGroup 
+      Condition: CreateDevSecuritygroup
+      Properties:
+        GroupDescription: DevSG 
+        SecurityGroupIngress: 
+           - IpProtocol: tcp
+             FromPort: 22
+             ToPort: 22
+             CidrIP: 0.0.0.0/0
+
+   ProdSecurityGroup:
+      Type: AWS::EC2::SecurityGroup 
+      Condition: CreateProdSG
+      Properties:
+        GroupDescription: ProdSG 
+        SecurityGroupIngress: 
+           - IpProtocol: tcp
+             FromPort: 22
+             ToPort: 22
+             CidrIP: 0.0.0.0/0             
+Output:
+   MyInstanceID:
+       Description: InstanceID Output
+       Value: !Ref DevEC2Instance
+   MyDnsName:
+       Description: DnsName  
+       Value: !GetAtt  DevEC2Instance.PublicDnsName
+   MyAvailabilityZone:
+       Description: Availability Zone  
+       Value: !GetAtt  DevEC2Instance.AvailabilityZone      
+       Export:
+         Name: !Sub "${AWS::StackName}-InstanceAz"
+   MyDevSG:
+       Description: My Dev SG 
+       value: !Ref DevSecurityGroup
+       Condition: CreateDevSecuritygroup 
+       Export:
+         Name: !Join [":",[!Ref 'AWS::StackName', MyDEVSSHSG]]
