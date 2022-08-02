@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 Instance with SecurityGroups
+
+Resources:
+   DevEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+       ImageId: ami-0cd3dfa4e37921605
+       KeyName: cfn-key-2
+       SecurityGroups:
+         - !Importvalue MyDEVSSHSG
+       AvailabilityZone:
+         - !Importvalue stack1-InstanceAz
+
+
